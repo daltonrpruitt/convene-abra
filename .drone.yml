@@ -1,0 +1,38 @@
+---
+kind: pipeline
+name: deploy to swarm-test.autonomic.zone
+steps:
+  - name: deployment
+    image: git.coopcloud.tech/coop-cloud/stack-ssh-deploy:latest
+    settings:
+      host: swarm-test.autonomic.zone
+      stack: {{ .Name }}
+      generate_secrets: true
+      purge: true
+      deploy_key:
+        from_secret: drone_ssh_swarm_test
+      networks:
+        - proxy
+    environment:
+      DOMAIN: {{ .Name }}.swarm-test.autonomic.zone
+      STACK_NAME: {{ .Name }}
+      LETS_ENCRYPT_ENV: production
+trigger:
+  branch:
+    - main
+---
+kind: pipeline
+name: generate recipe catalogue
+steps:
+  - name: release a new version
+    image: plugins/downstream
+    settings:
+      server: https://build.coopcloud.tech
+      token:
+        from_secret: drone_abra-bot_token
+      fork: true
+      repositories:
+        - coop-cloud/auto-recipes-catalogue-json
+
+trigger:
+  event: tag
